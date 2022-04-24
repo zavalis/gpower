@@ -1,0 +1,327 @@
+---
+title: 'A survey of  the quality and transparency of statistical power analyses conducted using GPower'
+author: |
+  |
+  | Robert T. Thibault & Emmanuel Zavalis
+  | (Contributor roles are detailed before the references)
+  |
+  | Address correspondence to robert.thibault@stanford.edu
+date: "`r Sys.Date()`"
+output:
+  pdf_document
+header-includes: \usepackage[labelformat=empty]{caption}
+---
+```{r packages}
+library(readr)
+library(knitr)
+library(tidyverse)
+library(kableExtra)
+```
+
+
+```{r setup, include=FALSE}
+
+# go in and delete the first row from the gpower form, and the third row that are meta-data and irrelevant to our dataframe
+# remove every column up to reviewer initial (since IP and exact location is revealed :-) )
+df_gpower_orig=read.csv('./gpowerlatest.csv')
+df_gpower_orig=df_gpower_orig[which(df_gpower_orig$reviewer=='EZ'),]
+
+#remove the ineligibile
+df_gpower=df_gpower_orig[which(df_gpower_orig$include=='Include'),]
+
+
+
+error=qt(0.975,df=length(na.omit(df_gpower$impact_factor))-1)*sd(df_gpower$impact_factor, na.rm=TRUE)/sqrt(na.omit(length(df_gpower$impact_factor)))
+
+
+
+#row_means <- apply(X=data, MARGIN=1, FUN=mean, na.rm=TRUE)
+
+# fix the impact factor shit to solve so that you can have the mean ignoring nans
+impact_factor=paste0(round(mean(df_gpower$impact_factor,na.rm=TRUE),1),' (95% CI ',round(mean(df_gpower$impact_factor,na.rm=TRUE)-error,1), ', ',round(mean(df_gpower$impact_factor,na.rm=TRUE)+error,1),')' )
+
+df_gpower$if.
+
+
+#df_gpower$
+
+knitr::opts_chunk$set(echo = TRUE)
+
+dfs=read.csv('pmc_result.txt',col.names='PMCID')
+lista=as.list(dfs$PMCID)
+set.seed(1453)
+samples=sample(lista,15)
+
+searchstring=paste(unlist(samples),collapse=" OR ")
+pmidsearch<-file("pmcidsearch_general.txt")
+writeLines(searchstring, pmidsearch)
+close(pmidsearch)
+
+# percentage that are clinical trials
+clinicalpercentage= round(nrow(df_gpower[which(df_gpower$clinical_trial.=='Yes'),])/nrow(df_gpower)*100,1)
+
+
+possibleones=(df_gpower[which( df_gpower$typeof_effectsize != 'Not given' & df_gpower$power_reported=='Yes' & df_gpower$alpha_reported=='Yes' & df_gpower$samplesize_reported=='Yes'),])
+
+possible_calc=nrow(possibleones)
+
+#effectsize_notgiven_with_no.=df_gpower[which(df_gpower$What.type.of.effect.size.was.given. == 'Not given' & !is.na(df_gpower$)),]
+
+match_powercalc=df_gpower[which(df_gpower$matching_powercalc_stats=='Yes'),]
+
+unsure_match=df_gpower[which(df_gpower$matching_powercalc_stats=="Unsure (there's not enough information for me to make code yes or no)."),]
+
+reproducible_power=df_gpower[grep('Yes',df_gpower$powercalc_reproducible),]
+
+df_gpower$ANOVA_within_between.
+
+
+p = 0.5
+moe = 0.2
+alpha=0.005
+z=qnorm(p=alpha, lower.tail=TRUE)*-1
+
+```
+
+```{r extraploate}
+# this chunk estimates the total number of published articles that use GPower for doing (1) a power analysis, or (2) an a priori sample size calculation
+
+#fileEncoding variable so that the column headers don't have junk text
+ex=read.csv('./hits.csv', header=T, fileEncoding="UTF-8-BOM")
+
+# number of articles coded
+denom <- nrow(df_gpower_orig)
+# number of articles meeting our inclusion criteria
+include <- nrow(df_gpower)
+# number of articles used for a priori sample size calculations
+apriori <- sum(grepl("A priori", df_gpower$typeof_powercalc) & grepl("Before", df_gpower$when_powercalc))
+# percentage of PMC articles that were hits
+proportion <- ex$pmcHits/ex$pmcTotal
+
+#initialize dataframe for point estimates and confidence intervals
+cis <- data.frame(matrix(nrow=6, ncol=3))
+
+# create function to calculate the point estimates and confidence intervals
+ciCalc <- function(raw, proportion, num, denom){
+  cis <- c(raw * proportion * num / denom,
+           raw * proportion * prop.test(x=num, n=denom, conf.level=.95)$conf.int[1],
+           raw * proportion * prop.test(x=num, n=denom, conf.level=.95)$conf.int[2]
+  )
+  return(cis)
+}
+
+# run the function to calculate point estimates and confidence intervals 
+cis <- rbind(ciCalc(ex$pmcTotal, proportion, include, denom),
+            ciCalc(ex$pmcTotal, proportion, apriori, denom),
+            ciCalc(ex$pubmedTotal, proportion, include, denom),
+            ciCalc(ex$pubmedTotal, proportion, apriori, denom),
+            ciCalc(ex$dimensionsTotal, proportion, include, denom),
+            ciCalc(ex$dimensionsTotal, proportion, apriori, denom)
+)
+
+# assign row names and column names
+rownames(cis) <- c("pmcInclude", 
+                    "pmcApriori",
+                    "pubmedInclude", 
+                    "pubmedApriori",
+                    "dimensionsInclude", 
+                    "dimensionsApriori"
+                    )
+colnames(cis) <- c("point", 
+                    "ci.lb",
+                    "ci.ub" 
+                    )        
+
+
+cis <- cis %>% round(0)
+
+#supplementary table 1
+st1 <- cis
+rownames(st1) <- c("PubMed Central included", 
+                    "PubMed Central a priori",
+                    "PubMed included", 
+                    "PubMed, a priori",
+                    "Dimensions included", 
+                    "Dimensions a priori"
+                    )
+colnames(st1) <- c("Point estimate", 
+                    "95% confidence Interval, lower bound",
+                    "95% confidence Interval, upper bound"
+                    )  
+
+```
+
+```{r, suppTable1, include = TRUE, echo = FALSE, results = "asis"}
+knitr::kable(st1, caption = "Supplementary Table 1. Estimates of the number of published articles that use GPower.", booktabs = T, linesep = "", align = "c") %>% 
+  kable_styling(latex_options = "striped") %>%
+  kable_styling(font_size = 8) %>%
+    add_footnote(paste0("The total number of article in each database since 2017 is: PubMed Central ", prettyNum(ex$pmcTotal, big.mark=",", scientific=F), "; PubMed ", prettyNum(ex$pubmedTotal, big.mark=",", scientific=F), "; dimensions.ai ", prettyNum(ex$dimensionsTotal, big.mark=",", scientific=F), "."), notation = "symbol", threeparttable = T)
+
+```
+
+```{r type}
+#initialize dataframe for type and timing of power analyses
+type <- data.frame(matrix(nrow=3, ncol=2))
+rownames(type) <- c("Sample size",
+                    "Power",
+                    "Effect size"
+)
+colnames(type) <- c("Before study",
+                    "After study"
+)
+
+type[1,1] <- apriori 
+type[1,2] <- sum(grepl("A priori", df_gpower$typeof_powercalc) & grepl("After", df_gpower$when_powercalc))
+type[2,1] <- sum(grepl("Post hoc", df_gpower$typeof_powercalc) & grepl("Before", df_gpower$when_powercalc))
+type[2,2] <- sum(grepl("Post hoc", df_gpower$typeof_powercalc) & grepl("After", df_gpower$when_powercalc))
+type[3,1] <- sum(grepl("effect size", df_gpower$typeof_powercalc) & grepl("Before", df_gpower$when_powercalc))
+type[3,2] <- sum(grepl("effect size", df_gpower$typeof_powercalc) & grepl("After", df_gpower$when_powercalc))
+
+```
+
+```{r, suppTable2, include = TRUE, echo = FALSE, results = "asis"}
+knitr::kable(type, caption = "Supplementary Table 2. Type and timing of power calculations", booktabs = T, linesep = "", align = "c") %>% 
+  kable_styling(latex_options = "striped")
+
+```
+
+```{r magic megatable, echo=FALSE}
+df_gpower$stat_test=''
+df_gpower$error=''
+
+# Alpha
+alphareported=round(nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),])/nrow(df_gpower)*100,1)
+alpha005=round(nrow(df_gpower[which(df_gpower$alpha_value=='0.05'),])/nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),])*100,1)
+alphaother=round(nrow(df_gpower[which(df_gpower$alpha_value!='0.05'),])/nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),])*100,1)
+
+# Power
+powerreported=round(nrow(df_gpower[which(df_gpower$power_reported=='Yes'),])/nrow(df_gpower)*100,1)
+power80=round(nrow(df_gpower[which(df_gpower$power_value==0.8),])/nrow(df_gpower[which(df_gpower$power_reported=='Yes'),])*100,1)
+power95=round(nrow(df_gpower[which(df_gpower$power_value==0.95),])/nrow(df_gpower[which(df_gpower$power_reported=='Yes'),])*100,1)
+powerother=round(nrow(df_gpower[which(df_gpower$power_value!=0.8),])/nrow(df_gpower[which(df_gpower$power_reported=='Yes'),])*100,1)
+
+# Effect size
+effectsizef=round(nrow(df_gpower[which(df_gpower$typeof_effectsize=='f'),])/nrow(df_gpower)*100,1)
+effectsized=round(nrow(df_gpower[which(df_gpower$typeof_effectsize=='d'),])/nrow(df_gpower)*100,1)
+effectsizeother=round(nrow(df_gpower[!grepl('f|d',df_gpower$typeof_effectsize),])/nrow(df_gpower)*100,1)
+effectsizereported=round(sum(!is.na(df_gpower$typeof_effectsize))/nrow(df_gpower)*100,1)
+
+#round(df_gpower[which(df_gpower$typeof_effectsize=='f'),]/nrow(df_gpower)*100,1)
+#df_gpower$samplesize_value
+
+# samplesize
+samplesizereported=round(sum(!is.na(df_gpower$samplesize_value))/nrow(df_gpower)*100,1)
+samplesizemedian=median(as.numeric(df_gpower[which(!is.na(df_gpower$samplesize_value)),]$samplesize_value))
+samplesizeiqr=IQR(as.numeric(df_gpower[which(!is.na(df_gpower$samplesize_value)),]$samplesize_value))
+samplesizenumber=paste0(as.character(samplesizemedian),' (', as.character(samplesizeiqr), ')')
+
+# type of test
+stattestt=round(nrow(df_gpower[grep('T-test',df_gpower$stat_test),])/nrow(df_gpower)*100,2)
+stattestanova=round(nrow(df_gpower[grep('ANOVA', df_gpower$stat_test),])/nrow(df_gpower)*100,2)
+stattestother=round(nrow(df_gpower[!grepl('T-test|ANOVA|NA',df_gpower$stat_test),])/nrow(df_gpower)*100,2)
+
+#reproducible?
+reproducibleoverall=round(nrow(df_gpower[grep('Yes', df_gpower$powercalc_reproducible),])/nrow(df_gpower)*100,1)
+reproduciblewassumptions=round(nrow(df_gpower[grep('make some assumptions', df_gpower$powercalc_reproducible),])/nrow(df_gpower)*100,1)
+reproduciblewoassumptions=round(nrow(df_gpower[grep('Yes, based solely on the information in the article or its supplementary material.', df_gpower$powercalc_reproducible),])/nrow(df_gpower)*100,1)
+irreproducible=round(nrow(df_gpower[grep('No', df_gpower$powercalc_reproducible),])/nrow(df_gpower)*100,1)
+
+# statistical test row dummy variable
+stattest=''
+
+temp=as.data.frame(rbind(alphareported, alpha005, alphaother,powerreported, power80, power95, powerother, effectsizereported, effectsizef, effectsized, effectsizeother,stattest, stattestanova,stattestt,stattestother,samplesizereported, samplesizenumber,reproducibleoverall, reproduciblewassumptions,reproduciblewoassumptions,irreproducible))
+
+rownames(temp)=c('Alpha','\t 0.05', '    Other level of significance', 'Power', '\t 80%','\t 95%','\t Other level of power','Effect size', '\t d', '\t f', '\t Other', 'Statistical test', '\t ANOVA', '\t T-test', '\t Other test', 'Sample size', 'Median (IQR)', 'Reproducible','Reproducible with assumptions','Reproducible w/o assumptions', 'Irreproducible')
+x=knitr::kable(
+  temp,
+  col.names = c('% Reporting'),
+  format = "pipe",
+  
+  caption = 'Table 2: Power calculation prerequisites reporting')
+
+add_indent(x, c(2, 3,5,6,7,9,10,11,13,14,15,19,20,21), level_of_indent = 2, )
+
+temp %>%
+  kbl(caption = "Reproducibility of power analyses", col.names=c('% Reporting')) %>%
+  kable_classic(full_width = T, html_font = "Cambria")%>%
+  add_indent(c(2, 3,5,6,7,9,10,11,13,14,15,19,20,21)) %>%
+  add_footnote('Note that we have used placeholder variables for the rows statistical tests, these will be replaced with actual data', notation='symbol')
+```
+
+
+
+# [Robby: Introduction]
+Including the Daniel Lakens paper, and the commentary that you authored.
+
+# Methods
+## Search method and selection criteria
+
+This is a pilot study that was conducted prior to the extraction of the actual sample that we will study in our paper. Using the search strategy ‘g*power’ in PubMed Central we searched for the papers that used the software GPower for their power analysis to examine their use of this tool and the handling of power calculations in general. The search was conducted on April 10th 2022 and retrieved `r nrow(dfs)` publications. 
+
+From these a random sample of `r length(samples)` articles were examined in detail using random seed 1453. 
+
+The search for the sample to find the articles and was used in PubMed Central was:
+
+'`r paste(samples,collapse=' OR ')`'
+
+
+We assessed the papers for eligibility first with the inclusion criteria being that the paper uses GPower to perform a power calculation. We also extracted meta-data that included what journal it was from, what impact factor the journal has, as well as the publication year. Finally we looked into whether the paper was a clinical trial defined as a study that includes human subjects and studies an intervention.  
+
+## Data extraction
+Then we proceeded to extract the full description of the power calculation. Continuing we looked if the calculation used an a priori (solving for sample size), post hoc(solving for power) or sensitivity (solving for effect size) type of power calculation. We then extracted the power of the study, the alpha level, the sample size as well as the effect size.  
+
+Furthermore, we investigated how many power calculations matched the main test, whether the BUG thingy of ANOVA sample sizes (where there is a difference in approaches used for the sample size calculation where results vary vastly). We also tabulated how many of the power analyses corrected for multiple comparisons.
+
+Finally, we attempted to reproduce the power analysis. To assess the accuracy of our extraction we'll test for interrater agreement in x of our studies. 
+
+## Precision analysis
+
+For the actual study that will be performed after this pilot we will look at a sample of `r round((z^2*(p*(1-p)))/moe^2,0)` from our PubMed Central search (the precision analysis using $\alpha$=alpha expected proportion of p=`r p` and a two-sided margin of error of `r moe*100`%; for precision of **WHAT?**). 
+ 
+# Results
+## Search results
+Of the `r nrow(df_gpower_orig)` papers, `r nrow(df_gpower[which(df_gpower$include=='Include'),])` were included in this study. `r clinicalpercentage` % of the papers were clinical trials.
+
+
+### Meta-data of the articles
+The impact factors of the journals the studied papers was on average `r impact_factor`. The papers were published from `r min(df_gpower$publication_year,na.rm=TRUE)` to `r max(df_gpower$publication_year,na.rm=TRUE)`. 
+
+## Extracted data
+Of the sample of `r length(samples)` papers using GPower for its power calculation `r nrow(df_gpower)-nrow(possibleones)` were missing one of the following parameters in reporting their power calculation:
+
+I’ve called it ANOVA bug thingy throughout because I haven’t been able to write something half intelligent about the difference in adjustments for the effect sizes so we can borrow from the introduction if you have something that would work?
+
+* Papers missing $\alpha$: `r nrow(df_gpower[which(df_gpower$alpha_reported=='No'),])`
+* Papers missing 1-$\beta$: `r nrow(df_gpower[which(df_gpower$power_reported=='No'),])`
+* Papers missing the type of effect size: `r nrow(df_gpower[grep('No',df_gpower$alpha_reported),])`
+
+Of the ones that didn't report what type of effect size i.e. Cohen's d or f, `r print('huh')` reported a number but without specifying the type of effect size. In `r nrow(df_gpower)-nrow(match_powercalc)` papers the power calculation didn't match the statistical test for the primary outcome `r nrow(unsure_match)` could not be assessed due to missing information in the statistical plan. `r nrow(reproducible_power)` studies had a completely reproducible power analysis.
+
+The amount of papers that get the effect size that is input into the power calculation from prior research are `r nrow(df_gpower[grep('Previous',df_gpower$effectsize_justification),])`, `r nrow(df_gpower[grep('Pilot',df_gpower$effectsize_justification),])` cases we were based own own pilot studies `r nrow(df_gpower[grep('No',df_gpower$effectsize_justification),])` cases didn't base it on research but merely on either Cohen's rules of thumb or they did not contain a justification at all. 
+
+The discovered bug in ANOVA power calculations .... 
+`r knitr::kable(table(df_gpower$ANOVA_within_between.),  col.names=c('Is this power calculation for within-between ANOVA or within main effect', 'Occurrences'), caption='Table 1: ANOVA within-between/ ANOVA within main effect "bug"');`
+
+Only `r round(nrow(df_gpower[grep('Yes',df_gpower$multiple_comparisons_powercalc),])/(nrow(df_gpower)-nrow(df_gpower[grep('no reason',df_gpower$multiple_comparisons_powercalc),])-nrow(df_gpower[grep('Unsure',df_gpower$multiple_comparisons_powercalc),])),3)*100`% (`r nrow(df_gpower[grep('Yes',df_gpower$multiple_comparisons_powercalc),])`/`r (nrow(df_gpower)-nrow(df_gpower[grep('no reason',df_gpower$multiple_comparisons_powercalc),])-nrow(df_gpower[grep('Unsure',df_gpower$multiple_comparisons_powercalc),]))`) of the power calculations that should adjust for multiple comparisons actually did use an $\alpha$ correction method (see Table 2).  
+
+
+`r knitr::kable(table(df_gpower$multiple_comparisons_powercalc),  col.names=c('Multiple comparisons correction', 'Occurrences'), caption='Table 2: Multiple comparisons correction')` 
+
+
+Most power calculations (The ones found in `r nrow(df_gpower[grep('A priori',df_gpower$typeof_powercalc),])` articles) where a priori power calculations (See Table 3)
+
+
+`r knitr::kable(table(df_gpower$typeof_powercalc),  col.names=c('The type of power calculation', 'Occurrences'), caption='Table 3: Types of power calculation')`
+
+
+`r print("placeholder for interrater agreement(IRA) data")`
+
+If you extrapolate this across the `r nrow(dfs)*(nrow(df_gpower[which(df_gpower$include=='Include'),])/nrow(df_gpower_orig))` then about x y z will not be reproducible to.....
+
+
+
+```{r, include=FALSE, echo=FALSE}
+#
+
+```
+
