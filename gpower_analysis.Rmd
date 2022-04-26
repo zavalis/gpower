@@ -11,11 +11,12 @@ output:
   pdf_document
 header-includes: \usepackage[labelformat=empty]{caption}
 ---
+
 ```{r packages}
 library(readr)
-library(knitr)
-library(tidyverse)
-library(kableExtra)
+library(tidyverse) # for cleaner code
+library(knitr) # for knitting and kable function
+library(kableExtra) # for kable table styling
 ```
 
 
@@ -23,7 +24,7 @@ library(kableExtra)
 
 # go in and delete the first row from the gpower form, and the third row that are meta-data and irrelevant to our dataframe
 # remove every column up to reviewer initial (since IP and exact location is revealed :-) )
-df_gpower_orig=read.csv('./gpowerlatest.csv')
+df_gpower_orig=read.csv('./gpower_pilotData.csv')
 df_gpower_orig=df_gpower_orig[which(df_gpower_orig$reviewer=='EZ'),]
 
 #remove the ineligibile
@@ -87,7 +88,7 @@ z=qnorm(p=alpha, lower.tail=TRUE)*-1
 # this chunk estimates the total number of published articles that use GPower for doing (1) a power analysis, or (2) an a priori sample size calculation
 
 #fileEncoding variable so that the column headers don't have junk text
-ex=read.csv('./hits.csv', header=T, fileEncoding="UTF-8-BOM")
+ex=read.csv('./queryHits.csv', header=T, fileEncoding="UTF-8-BOM")
 
 # number of articles coded
 denom <- nrow(df_gpower_orig)
