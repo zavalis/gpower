@@ -10,9 +10,17 @@ date: "`r Sys.Date()`"
 output:
   pdf_document
 header-includes: \usepackage[labelformat=empty]{caption}
+
 ---
 
-```{r packages}
+
+```{r}
+// TODO: Title for this
+// HUH?
+
+```
+
+```{r packages, echo=FALSE}
 library(readr)
 library(tidyverse) # for cleaner code
 library(knitr) # for knitting and kable function
@@ -20,7 +28,7 @@ library(kableExtra) # for kable table styling
 ```
 
 
-```{r setup, include=FALSE}
+```{r setup, echo=FALSE}
 
 # go in and delete the first row from the gpower form, and the third row that are meta-data and irrelevant to our dataframe
 # remove every column up to reviewer initial (since IP and exact location is revealed :-) )
@@ -161,29 +169,13 @@ knitr::kable(st1, caption = "Supplementary Table 1. Estimates of the number of p
 ```
 
 ```{r type}
-#initialize dataframe for type and timing of power analyses
-type <- data.frame(matrix(nrow=3, ncol=2))
-rownames(type) <- c("Sample size",
-                    "Power",
-                    "Effect size"
-)
-colnames(type) <- c("Before study",
-                    "After study"
-)
-
-type[1,1] <- apriori 
-type[1,2] <- sum(grepl("A priori", df_gpower$typeof_powercalc) & grepl("After", df_gpower$when_powercalc))
-type[2,1] <- sum(grepl("Post hoc", df_gpower$typeof_powercalc) & grepl("Before", df_gpower$when_powercalc))
-type[2,2] <- sum(grepl("Post hoc", df_gpower$typeof_powercalc) & grepl("After", df_gpower$when_powercalc))
-type[3,1] <- sum(grepl("effect size", df_gpower$typeof_powercalc) & grepl("Before", df_gpower$when_powercalc))
-type[3,2] <- sum(grepl("effect size", df_gpower$typeof_powercalc) & grepl("After", df_gpower$when_powercalc))
+timingdf=table(df_gpower$typeof_powercalc, df_gpower$when_powercalc)
 
 ```
 
 ```{r, suppTable2, include = TRUE, echo = FALSE, results = "asis"}
-knitr::kable(type, caption = "Supplementary Table 2. Type and timing of power calculations", booktabs = T, linesep = "", align = "c") %>% 
+knitr::kable(timingdf, caption = "Supplementary Table 2. Type and timing of power calculations", booktabs = T, linesep = "", align = "c") %>% 
   kable_styling(latex_options = "striped")
-
 ```
 
 ```{r magic megatable, echo=FALSE}
@@ -192,27 +184,41 @@ df_gpower$error=''
 
 # Functions to make this a little easier
 
+rounder=function(x){
+  if (round(x,0)!=100)
+  {
+   return(round(x,0))}
+  else 
+  {return(round(x,1))}}
+
+rounder(99.3)
+
 makeCI <- function(num, denom){
   props=prop.test(num,denom)
-  CI= paste(round(props[["conf.int"]]*100,2), collapse=', ')
-  estimate =as.character(round(props[['estimate']]*100,2))
+  print(props)
+  lower=as.character(rounder(props[['conf.int']][1]*100))
+  upper=as.character(rounder(props[['conf.int']][2]*100))
+  CI=paste0(lower,', ',upper)
+  estimate =as.character(rounder(props[['estimate']]*100))
   CInestimate=paste0(estimate,' (',CI,')')
   return(CInestimate)
 }
 
+
 makeProp<- function(num, denom){
   props=prop.test(num,denom)
-  estimate =as.character(round(props[['estimate']]*100,2))
+  print(props)
+  estimate =as.character(rounder(props[['estimate']]*100))
   return(as.character(estimate))
 }
 
 
 # Alpha
 alphareported=makeCI(nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),]),nrow(df_gpower))
-alpha005=makeProp(nrow(df_gpower[which(df_gpower$alpha_value=='0.05'),]),nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),]))
+alpha005=makeProp(nrow(df_gpower[which(df_gpower$alpha_value=='0.05'),]),nrow(df_gpower))
   
 round(nrow(df_gpower[which(df_gpower$alpha_value=='0.05'),])/nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),])*100,1)
-alphaother=round(nrow(df_gpower[which(df_gpower$alpha_value!='0.05'),])/nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),])*100,1)
+alphaother=makeProp(nrow(df_gpower[which(df_gpower$alpha_value!='0.05'),]),nrow(df_gpower))
 
 # Power
 powerreported=makeCI(nrow(df_gpower[which(df_gpower$power_reported=='Yes'),]),nrow(df_gpower))
@@ -257,7 +263,7 @@ multiple_comparisons=round(nrow(df_gpower[grep('Yes',df_gpower$multiple_comparis
 # statistical test row dummy variable
 stattest=''
 
-temp=as.data.frame(rbind(alphareported, alpha005, alphaother,powerreported, power80, power95, powerother, effectsizereported, effectsizef, effectsized, effectsizeother,justifiedoverall, justifiedpilot, justifiedpreviousres, stattest, stattestanova,stattestt,stattestother,samplesizereported, samplesizenumber,reproducibleoverall, reproduciblewassumptions,reproduciblewoassumptions,irreproducible, multiple_comparisons))
+temp=as.data.frame(rbind(alphareported, alpha005, alphaother,powerreported, power80, power95, powerother, effectsizereported, effectsizef, effectsized, effectsizeother,justifiedoverall,justifiedpreviousres,justifiedpilot, stattest, stattestanova,stattestt,stattestother,samplesizereported, samplesizenumber,reproducibleoverall, reproduciblewassumptions,reproduciblewoassumptions,irreproducible, multiple_comparisons))
 
 rownames(temp)=c('Alpha','\t 0.05', 'Other level of significance', 'Power', '\t 80%','\t 95%','\t Other level of power','Effect size', '\t d', '\t f', '\t Other','Justified their effect size', 'Justified: previous research','Justified: own pilot', 'Statistical test', '\t ANOVA', '\t T-test', '\t Other test', 'Sample size', 'Median (IQR)',  'Reproducible','Reproducible with assumptions','Reproducible w/o assumptions', 'Irreproducible', 'Adjusted for multiple comparisons')
 x=knitr::kable(
@@ -267,11 +273,14 @@ x=knitr::kable(
   
   caption = 'Table 2: Power calculation prerequisites reporting')
 
+
+# add indentations to the entire row and not just the one column to the left.
 add_indent(x, c(2, 3,5,6,7,9,10,11,13,14,15,19,20,21), level_of_indent = 2, )
 
 temp %>%
   kbl(caption = "Reproducibility of power analyses", col.names=c('% Reporting')) %>%
-  kable_classic(full_width = T, html_font = "Cambria")%>%
+  kable_styling(latex_options = "striped")%>%
+  #kable_classic(full_width = T, html_font = "Cambria")%>%
   add_indent(c(2, 3,5,6,7,9,10,11,13,14,15,19,20,21)) %>%
   add_footnote('Note that we have used placeholder variables for the rows statistical tests, these will be replaced with actual data', notation='symbol')
 ```
