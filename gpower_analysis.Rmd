@@ -190,13 +190,32 @@ knitr::kable(type, caption = "Supplementary Table 2. Type and timing of power ca
 df_gpower$stat_test=''
 df_gpower$error=''
 
+# Functions to make this a little easier
+
+makeCI <- function(num, denom){
+  props=prop.test(num,denom)
+  CI= paste(round(props[["conf.int"]]*100,2), collapse=', ')
+  estimate =as.character(round(props[['estimate']]*100,2))
+  CInestimate=paste0(estimate,' (',CI,')')
+  return(CInestimate)
+}
+
+makeProp<- function(num, denom){
+  props=prop.test(num,denom)
+  estimate =as.character(round(props[['estimate']]*100,2))
+  return(as.character(estimate))
+}
+
+
 # Alpha
-alphareported=round(nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),])/nrow(df_gpower)*100,1)
-alpha005=round(nrow(df_gpower[which(df_gpower$alpha_value=='0.05'),])/nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),])*100,1)
+alphareported=makeCI(nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),]),nrow(df_gpower))
+alpha005=makeProp(nrow(df_gpower[which(df_gpower$alpha_value=='0.05'),]),nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),]))
+  
+round(nrow(df_gpower[which(df_gpower$alpha_value=='0.05'),])/nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),])*100,1)
 alphaother=round(nrow(df_gpower[which(df_gpower$alpha_value!='0.05'),])/nrow(df_gpower[which(df_gpower$alpha_reported=='Yes'),])*100,1)
 
 # Power
-powerreported=round(nrow(df_gpower[which(df_gpower$power_reported=='Yes'),])/nrow(df_gpower)*100,1)
+powerreported=makeCI(nrow(df_gpower[which(df_gpower$power_reported=='Yes'),]),nrow(df_gpower))
 power80=round(nrow(df_gpower[which(df_gpower$power_value==0.8),])/nrow(df_gpower[which(df_gpower$power_reported=='Yes'),])*100,1)
 power95=round(nrow(df_gpower[which(df_gpower$power_value==0.95),])/nrow(df_gpower[which(df_gpower$power_reported=='Yes'),])*100,1)
 powerother=round(nrow(df_gpower[which(df_gpower$power_value!=0.8),])/nrow(df_gpower[which(df_gpower$power_reported=='Yes'),])*100,1)
@@ -205,13 +224,18 @@ powerother=round(nrow(df_gpower[which(df_gpower$power_value!=0.8),])/nrow(df_gpo
 effectsizef=round(nrow(df_gpower[which(df_gpower$typeof_effectsize=='f'),])/nrow(df_gpower)*100,1)
 effectsized=round(nrow(df_gpower[which(df_gpower$typeof_effectsize=='d'),])/nrow(df_gpower)*100,1)
 effectsizeother=round(nrow(df_gpower[!grepl('f|d',df_gpower$typeof_effectsize),])/nrow(df_gpower)*100,1)
-effectsizereported=round(sum(!is.na(df_gpower$typeof_effectsize))/nrow(df_gpower)*100,1)
+effectsizereported=makeCI(sum(!is.na(df_gpower$typeof_effectsize)),nrow(df_gpower))
+
+# Effect size justification
+justifiedoverall=makeProp(nrow(df_gpower[!grepl('No', df_gpower$effectsize_justification),]),nrow(df_gpower))
+justifiedpilot=makeProp(nrow(df_gpower[grepl('pilot', df_gpower$effectsize_justification),]),nrow(df_gpower))
+justifiedpreviousres=makeProp(nrow(df_gpower[grepl('Previous research', df_gpower$effectsize_justification),]),nrow(df_gpower))
 
 #round(df_gpower[which(df_gpower$typeof_effectsize=='f'),]/nrow(df_gpower)*100,1)
 #df_gpower$samplesize_value
 
 # samplesize
-samplesizereported=round(sum(!is.na(df_gpower$samplesize_value))/nrow(df_gpower)*100,1)
+samplesizereported=makeCI(sum(!is.na(df_gpower$samplesize_value)),nrow(df_gpower))
 samplesizemedian=median(as.numeric(df_gpower[which(!is.na(df_gpower$samplesize_value)),]$samplesize_value))
 samplesizeiqr=IQR(as.numeric(df_gpower[which(!is.na(df_gpower$samplesize_value)),]$samplesize_value))
 samplesizenumber=paste0(as.character(samplesizemedian),' (', as.character(samplesizeiqr), ')')
@@ -222,17 +246,20 @@ stattestanova=round(nrow(df_gpower[grep('ANOVA', df_gpower$stat_test),])/nrow(df
 stattestother=round(nrow(df_gpower[!grepl('T-test|ANOVA|NA',df_gpower$stat_test),])/nrow(df_gpower)*100,2)
 
 #reproducible?
-reproducibleoverall=round(nrow(df_gpower[grep('Yes', df_gpower$powercalc_reproducible),])/nrow(df_gpower)*100,1)
+reproducibleoverall=makeCI(nrow(df_gpower[grep('Yes', df_gpower$powercalc_reproducible),]),nrow(df_gpower))
 reproduciblewassumptions=round(nrow(df_gpower[grep('make some assumptions', df_gpower$powercalc_reproducible),])/nrow(df_gpower)*100,1)
 reproduciblewoassumptions=round(nrow(df_gpower[grep('Yes, based solely on the information in the article or its supplementary material.', df_gpower$powercalc_reproducible),])/nrow(df_gpower)*100,1)
 irreproducible=round(nrow(df_gpower[grep('No', df_gpower$powercalc_reproducible),])/nrow(df_gpower)*100,1)
 
+# Multiple comparisons
+multiple_comparisons=round(nrow(df_gpower[grep('Yes',df_gpower$multiple_comparisons_powercalc),])/(nrow(df_gpower)-nrow(df_gpower[grep('no reason',df_gpower$multiple_comparisons_powercalc),])-nrow(df_gpower[grep('Unsure',df_gpower$multiple_comparisons_powercalc),]))*100,2)
+
 # statistical test row dummy variable
 stattest=''
 
-temp=as.data.frame(rbind(alphareported, alpha005, alphaother,powerreported, power80, power95, powerother, effectsizereported, effectsizef, effectsized, effectsizeother,stattest, stattestanova,stattestt,stattestother,samplesizereported, samplesizenumber,reproducibleoverall, reproduciblewassumptions,reproduciblewoassumptions,irreproducible))
+temp=as.data.frame(rbind(alphareported, alpha005, alphaother,powerreported, power80, power95, powerother, effectsizereported, effectsizef, effectsized, effectsizeother,justifiedoverall, justifiedpilot, justifiedpreviousres, stattest, stattestanova,stattestt,stattestother,samplesizereported, samplesizenumber,reproducibleoverall, reproduciblewassumptions,reproduciblewoassumptions,irreproducible, multiple_comparisons))
 
-rownames(temp)=c('Alpha','\t 0.05', '    Other level of significance', 'Power', '\t 80%','\t 95%','\t Other level of power','Effect size', '\t d', '\t f', '\t Other', 'Statistical test', '\t ANOVA', '\t T-test', '\t Other test', 'Sample size', 'Median (IQR)', 'Reproducible','Reproducible with assumptions','Reproducible w/o assumptions', 'Irreproducible')
+rownames(temp)=c('Alpha','\t 0.05', 'Other level of significance', 'Power', '\t 80%','\t 95%','\t Other level of power','Effect size', '\t d', '\t f', '\t Other','Justified their effect size', 'Justified: previous research','Justified: own pilot', 'Statistical test', '\t ANOVA', '\t T-test', '\t Other test', 'Sample size', 'Median (IQR)',  'Reproducible','Reproducible with assumptions','Reproducible w/o assumptions', 'Irreproducible', 'Adjusted for multiple comparisons')
 x=knitr::kable(
   temp,
   col.names = c('% Reporting'),
@@ -316,8 +343,6 @@ Most power calculations (The ones found in `r nrow(df_gpower[grep('A priori',df_
 
 
 `r print("placeholder for interrater agreement(IRA) data")`
-
-If you extrapolate this across the `r nrow(dfs)*(nrow(df_gpower[which(df_gpower$include=='Include'),])/nrow(df_gpower_orig))` then about x y z will not be reproducible to.....
 
 
 
