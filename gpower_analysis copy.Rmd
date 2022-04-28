@@ -1,5 +1,6 @@
 ---
-title: 'A survey of  the quality and transparency of statistical power analyses conducted using GPower'
+title: A survey of  the quality and transparency of statistical power analyses conducted
+  using GPower
 author: |
   |
   | Robert T. Thibault & Emmanuel Zavalis
@@ -9,11 +10,10 @@ author: |
 date: "`r Sys.Date()`"
 output:
   pdf_document:
-    includes:  
+    includes:
       in_header: my_header.tex
-header-includes:
-  - \usepackage{caption}
-
+  word_document: default
+header-includes: \usepackage{caption}
 ---
 \captionsetup[table]{labelformat=empty}
 
@@ -309,53 +309,56 @@ magicmegadtable
 
 \newpage
 
-### Table 2. Error in GPower calculations
+## Table 2. Error in GPower calculations
 
 [errors in the GPower calculations will be tabulated into a table of the errors manually and inserted into the finished manuscript]
 
 \newpage
 
-# Supplementary tables
-Here we have all the supplemental tables for the study 'A survey of the quality and transparency of statistical poweranalyses conducted using GPower' by Robert T. Thibault, Emmanuel Zavalis, Hugo Pedder, *then who?*
-
-\clearpage
-
 ```{r, echo=FALSE} 
 supptable1
 ```
 
-\clearpage
+\newpage
 
 ```{r, echo=FALSE} 
 supptable2
 ```
 
-\clearpage
+\newpage
+
+## Further supplementals of summary data for questions not fully presented in the main text (including justification,  multiple comparisons, ANOVA, match, additional error)
 
 ```{r, echo=FALSE} 
 i=knitr::kable(table(df_gpower$effectsize_justification), col.names=c('Type of justification','No. of articles'), caption='Supplementary Table 3. Justification of effect size') %>%kable_styling(latex_options = "striped")%>%kable_styling(latex_options = c("hold_position"))
-```
-`r i`
-\clearpage
-
-```{r, echo=FALSE} 
-i=knitr::kable(table(df_gpower$multiple_comparisons_powercalc), col.names=c('Does it adjust for multiple comparisons?','No. of articles'), caption='Supplementary Table 4. Adjustment for multiple comparisons') %>%kable_styling(latex_options = "striped")%>%kable_styling(latex_options = c("hold_position"))
-i=i%>%column_spec(1, width = "13em")
-```
-`r i`
-\newpage
-
-```{r, echo=FALSE} 
-i=knitr::kable(table(df_gpower$ANOVA_within_between.), col.names=c('Does it adjust for the ANOVA conundrum?','No. of articles'), caption='Supplementary Table 5. The ANOVA conundrum') %>%kable_styling(latex_options = "striped")%>%kable_styling(latex_options = c("hold_position"))
-                                                                                          i=i%>%column_spec(1, width = "13em")
-```
-`r i`
-
-
-\newpage
-
-```{r, echo=FALSE} 
-i=knitr::kable(table(df_gpower$matching_powercalc_stats), col.names=c('Does the power calculation match the statistical test?','No. of articles'), caption = 'Supplementary Table 6. The match of statistical analysis to power analyses ')%>%kable_styling(latex_options = "striped")%>%kable_styling(latex_options = c("hold_position"))%>%column_spec(1, width = "13em")
 
 i
 ```
+
+\newpage
+```{r, echo=FALSE} 
+i=knitr::kable(table(df_gpower$multiple_comparisons_powercalc), col.names=c('Does it adjust for multiple comparisons?','No. of articles'), caption='Supplementary Table 4. Adjustment for multiple comparisons') %>%kable_styling(latex_options = "striped")
+i=i%>%column_spec(1, width = "13em")
+
+i
+```
+
+\newpage
+
+```{r, echo=FALSE} 
+i=knitr::kable(table(df_gpower$ANOVA_within_between.), col.names=c('Does it adjust for the ANOVA conundrum?','No. of articles'), caption='Supplementary Table 5. The ANOVA conundrum') %>%kable_styling(latex_options = "striped")
+                                                                                          i=i%>%column_spec(1, width = "13em")
+                                                                                          i
+```
+
+
+\newpage
+
+```{r, echo=FALSE} 
+i=knitr::kable(table(df_gpower$matching_powercalc_stats), col.names=c('Does the power calculation match the statistical test?','No. of articles'), caption = 'Supplementary Table 6. The match of statistical analysis to power analyses ') %>%kable_styling(latex_options = "striped")
+
+i=i%>%column_spec(1, width = "13em")
+
+i
+```
+
