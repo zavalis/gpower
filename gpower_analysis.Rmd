@@ -107,8 +107,24 @@ colnames(cis) <- c("point",
 
 cis <- cis %>% round(0)
 
+#create function to create point estimates and confidence intervals as they'll appear in the table output
+ciTab <- function(raw, proportion, num, denom){
+  point <- (raw * proportion * num / denom) %>% round(0) %>% prettyNum(big.mark=",", scientific=F)
+  ci.lb <- (raw * proportion * prop.test(x=num, n=denom, conf.level=.95)$conf.int[1]) %>% round(0) %>% prettyNum(big.mark=",", scientific=F)
+  ci.ub <- (raw * proportion * prop.test(x=num, n=denom, conf.level=.95)$conf.int[2]) %>% round(0) %>% prettyNum(big.mark=",", scientific=F)
+  ciOut <- paste0(point, " (", ci.lb, " - ", ci.ub, ")")
+  return(ciOut)
+}
+
+st2 <- rbind(ciTab(ex$pmcTotal, proportion, include, denom),
+            ciTab(ex$pmcTotal, proportion, apriori, denom),
+            ciTab(ex$pubmedTotal, proportion, include, denom),
+            ciTab(ex$pubmedTotal, proportion, apriori, denom),
+            ciTab(ex$dimensionsTotal, proportion, include, denom),
+            ciTab(ex$dimensionsTotal, proportion, apriori, denom)
+)
+
 #supplementary table 1
-st2 <- cis
 rownames(st2) <- c("PubMed Central included", 
                     "PubMed Central a priori",
                     "PubMed included", 
@@ -116,23 +132,20 @@ rownames(st2) <- c("PubMed Central included",
                     "Dimensions included", 
                     "Dimensions a priori"
                     )
-colnames(st2) <- c("Point estimate", 
-                    "95% confidence Interval, lower bound",
-                    "95% confidence Interval, upper bound"
-                    )  
+colnames(st2) <- "Estimate (95% CI)"
 
-minapriori=st2[4,2]
-maxapriori=st2[6,3]
+minapriori=cis[4,2]
+maxapriori=cis[6,3]
 
-minanypowercalc=st2[3,2]
-maxanypowercalc=st2[5,3]
+minanypowercalc=cis[3,2]
+maxanypowercalc=cis[5,3]
 
 ```
 
 ```{r, suppTable1, include = TRUE, echo = FALSE}
 timingdf=table(df_gpower$typeof_powercalc, df_gpower$when_powercalc)
 
-supptable1=knitr::kable(timingdf, caption = "Supplementary Table 1. Type and timing of power calculations", booktabs = T, linesep = "", align = "c") %>% 
+supptable1=knitr::kable(timingdf, caption = "Supplementary Table 1. Type and timing of power calculations", booktabs = T, linesep = "", align = "l") %>% 
   kable_styling(latex_options = "striped")%>%kable_styling(latex_options = c("hold_position"))
 ```
 
@@ -226,7 +239,8 @@ rownames(magicmegadf)=c('Alpha (95% CI)','0.05', 'Other level of significance', 
 ```{r, magicmegadtable, echo=FALSE}
 magicmegadtable=magicmegadf %>%
   kbl(caption = "Table 1. Complete reporting and reproducibility of GPower calculations", col.names=c('% Reporting')) %>%
-  kable_styling(latex_options = "striped")%>% kable_styling(latex_options = c("hold_position"))%>%
+  row_spec(c(1, 4, 8, 12, 16, 18, 21, 24), bold=T) %>%
+  kable_styling(latex_options = "striped")%>% kable_styling(latex_options = c("hold_position")) %>%
   #kable_classic(full_width = T, html_font = "Cambria")%>%
   
   # redo that stuff...
