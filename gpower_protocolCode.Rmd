@@ -32,8 +32,14 @@ pmcids=read.csv('pmc_queryResults.txt',col.names='PMCID')
 # sample 500 of them, which should be plenty more than we need to reach the 95 articles to include
 set.seed(1313)
 pmcids <- pmcids %>% sample_n(500, replace = FALSE)
-# output this sample to a csv to draw from
-write.csv(pmcids, "pmcids_sample.csv")
+
+# write the search as a query into a txt file.
+searchstring=paste(unlist(pmcids),collapse=" OR ")
+pmcidsearch=file("pmcidsearch_general.txt")
+writeLines(searchstring, pmidsearch)
+close(pmidsearch)
+
+typeof(pmcids)
 ```
 
 ```{r binsim}
