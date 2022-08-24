@@ -33,13 +33,13 @@ pmcids=read.csv('pmc_queryResults.txt',col.names='PMCID')
 set.seed(1313)
 pmcids <- pmcids %>% sample_n(500, replace = FALSE)
 
+pmcidthisten=pmcids[11:20,1]
 # write the search as a query into a txt file.
-searchstring=paste(unlist(pmcids),collapse=" OR ")
-pmcidsearch=file("pmcidsearch_general.txt")
-writeLines(searchstring, pmidsearch)
-close(pmidsearch)
+searchstring=paste(unlist(pmcidthisten),collapse=" OR ")
+pmcidsearch=file("pmcidsearch_temp.txt")
+writeLines(searchstring, pmcidsearch)
+close(pmcidsearch)
 
-typeof(pmcids)
 ```
 
 ```{r binsim}
